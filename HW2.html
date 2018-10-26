@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+#info {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+</style>
+</head>
+<body>
+
+<div id="info">hw2
+</div>
+<audio id="collisionsound" style="display:none">
+<source src="https://jyunming-chen.github.io/gameHWhelpers/sounds/collision3.wav" type="audio/wav">
+</audio>
+<audio id="soundtrack" style="display:none">
+<source src="https://jyunming-chen.github.io/gameHWhelpers/sounds/KennyG.mp3" type="audio/mp3">
+</audio>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js">
+
+
+</script>
+<script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+
+<script>
+
+class Ball {
+  constructor(mesh, rad = 2, color) {
+
+    this.pos = new THREE.Vector3()
+    this.vel = new THREE.Vector3()
+    this.force = new THREE.Vector3()
+    this.mass = 10;
+    this.mesh = mesh;
+    this.radius = rad;
+    this.light = new THREE.PointLight(color, 1, 50);
+    scene.add(this.light)
+    scene.add(this.mesh) // add to scene when particle is created
+
+    console.log(color)
+    this.mesh.material.color.copy(color.clone());
+  }
+  update(dt) {
+    this.vel.add(this.force.clone().multiplyScalar(dt))
+    this.pos.add(this.vel.clone().multiplyScalar(dt))
+
+    this.collidingPlanes(planes)
+
+    // simple collision
+    /*
+    if (this.pos.z > 100 - this.radius) {
+      	const CR = 0.9
+      	this.pos.z = 100 - this.radius
+        this.vel.z = - CR * this.vel.z;
+      }
+    */
+    this.mesh.position.copy(this.pos)
+    this.light.position.copy(this.pos)
+    this.light.position.y += 20
+  }
+
+  collidingPlanes(planes) {
+    const EPS = 1e-3
+    const CR = 0.96
+    for (let i = 0; i < planes.length; i++) {
+      let plane = planes[i]
+      let point = this.pos.clone().sub(plane.ptOnPl)
+      if (point.dot(plane.normal) < EPS + this.radius) {
+        collisionSound.play();
+        soundTrack.play();
+        // position correction
+        this.pos.copy(plane.ptOnPl.clone().add(point.projectOnPlane(plane.normal)))
+        this.pos.add(plane.normal.clone().multiplyScalar(this.radius))
+        // velocity update
+        this.vel.sub(plane.normal.clone().multiplyScalar((1 + CR) * this.vel.dot(plane.normal)))
+        //return;  // assume particle collides with AT MOST one plane
+      }
+    }
+  }
+
+}
+
+class Plane {
+  constructor(localPointOnPlane, localNormal, mesh) {
+    this.localPtOnPl = localPointOnPlane.clone();
+    this.localNormal = localNormal.clone();
+    this.mesh = mesh; // the graphics representation
+    scene.add(mesh)
+  }
+  update() {
+    this.mesh.updateMatrixWorld() // important!
+    this.ptOnPl = this.mesh.localToWorld(this.localPtOnPl.clone());
+    let normalMat = new THREE.Matrix3().getNormalMatrix(this.mesh.matrixWorld);
+    this.normal = this.localNormal.clone().applyMatrix3(normalMat).normalize()
+  }
+}
+
+function collision() {
+
+  for (let i = 0; i < balls.length; i++) {
+    for (let j = i + 1; j < balls.length; j++) {
+      ballBallIntersect(balls[i], balls[j]);
+    }
+  }
+}
+
+function ballBallIntersect(b1, b2) {
+  let centerDist = b1.pos.distanceTo(b2.pos)
+  if (centerDist < b1.radius + b2.radius) {
+    console.log('ball-ball hit')
+    let p1 = b1.pos;
+    let p2 = b2.pos;
+    let n = p1.clone().sub(p2).normalize();
+    // from wiki (elastic collision)
+    //debugger
+    //console.log ('before:'+b1.vel.x)
+    let v12 = b1.vel.clone().sub(b2.vel)
+    b1.vel.sub(n.clone().multiplyScalar(v12.dot(n) * 2 * b2.mass / (b1.mass + b2.mass)))
+    b2.vel.add(n.clone().multiplyScalar(v12.dot(n) * 2 * b1.mass / (b1.mass + b2.mass)))
+    //console.log ('after:'+b1.vel.x)
+    // position correction
+    let vv = b2.pos.clone().sub(b1.pos);
+    let overlap = (b2.radius + b1.radius) - vv.length();
+    vv.normalize();
+    collisionSound.play();
+    b1.pos.add(vv.clone().multiplyScalar(-overlap / 2))
+    b2.pos.add(vv.clone().multiplyScalar(overlap / 2))
+  }
+}
+
+///////////////////////////////////////////////////////////////////////
+var camera, scene, renderer, light;
+var ball
+var planes = []
+var balls = []
+var collisionSound, soundTrack;
+var isDimming = false,
+  soundVal = 1.0,
+  sign = 1.0;
+var isPaused = false;
+var clock = new THREE.Clock();
+
+
+var puck = {
+  pos: new THREE.Vector3(),
+  vel: new THREE.Vector3(),
+  mesh: new THREE.Object3D()
+};
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+
+  collisionSound = document.getElementById('collisionsound');
+  soundTrack = document.getElementById('soundtrack');
+
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+  camera.position.y = 200;
+  camera.position.z = 300;
+
+  light = new THREE.PointLight(0xffffff);
+  light.position.set(100, 300, 200);
+  scene.add(light);
+
+  var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+  //scene.add(gridXZ);
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshPhongMaterial({
+    color: 0x898989
+  }))
+  floor.rotation.x = -Math.PI / 2
+  scene.add(floor)
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0xeeeeee);
+
+  let controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  document.body.appendChild(renderer.domElement);
+  ///////////////////////////////////////////////////////////
+
+  let disk, ball;
+  disk = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 6, 32), new THREE.MeshLambertMaterial())
+
+  ball = new Ball(disk, 10, new THREE.Color(0x00ffff))
+  ball.vel.set(0, 0, 15)
+  ball.pos.set(5, 3, 9)
+  balls.push(ball)
+
+  disk = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 6, 32), new THREE.MeshLambertMaterial())
+  ball = new Ball(disk, 10, new THREE.Color(0xff00ff))
+  ball.vel.set(0, 0, -15)
+  ball.pos.set(7, 3, 6)
+  balls.push(ball)
+
+  disk = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 6, 32), new THREE.MeshLambertMaterial())
+  ball = new Ball(disk, 10, new THREE.Color(0xff0000))
+  ball.vel.set(0, 0, -15)
+  ball.pos.set(5, 3, 3)
+  balls.push(ball)
+
+  disk = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 6, 32), new THREE.MeshLambertMaterial())
+  ball = new Ball(disk, 10, new THREE.Color(0x00ff00))
+  ball.vel.set(0, 0, -15)
+  ball.pos.set(2, 3, 9)
+  balls.push(ball)
+
+  disk = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 6, 32), new THREE.MeshLambertMaterial())
+  ball = new Ball(disk, 10, new THREE.Color(0x0000ff))
+  ball.vel.set(0, 0, -15)
+  ball.pos.set(8, 3, 6)
+  balls.push(ball)
+
+  disk = new THREE.Mesh(new THREE.CylinderGeometry(10, 10, 6, 32), new THREE.MeshLambertMaterial())
+  ball = new Ball(disk, 10, new THREE.Color(0xffff00))
+  ball.vel.set(0, 0, -15)
+  ball.pos.set(4, 3, 7)
+  balls.push(ball)
+  ///////////////////////////////////////////////////////////////
+  let plane, wall
+  wall = new THREE.Mesh(new THREE.BoxGeometry(220, 50, 10), new THREE.MeshPhongMaterial({
+    color: 0xff0000,
+    opacity: 0.2,
+    transparent: true
+  }))
+  scene.add(wall)
+  wall.position.y = 20
+  wall.position.z = 105
+  plane = new Plane(new THREE.Vector3(0, 0, -5), new THREE.Vector3(0, 0, -1), wall)
+  plane.update()
+  planes.push(plane)
+
+  wall = new THREE.Mesh(new THREE.BoxGeometry(220, 50, 10), new THREE.MeshPhongMaterial({
+    color: 0xff0000,
+    opacity: 0.2,
+    transparent: true
+  }))
+  scene.add(wall)
+  wall.position.y = 20
+  wall.position.z = -105
+  plane = new Plane(new THREE.Vector3(0, 0, 5), new THREE.Vector3(0, 0, 1), wall.clone())
+  plane.update()
+  planes.push(plane)
+
+  wall = new THREE.Mesh(new THREE.BoxGeometry(10, 50, 220), new THREE.MeshPhongMaterial({
+    color: 0xff0000,
+    opacity: 0.2,
+    transparent: true
+  }))
+  scene.add(wall)
+  wall.position.y = 20
+  wall.position.x = 105
+  plane = new Plane(new THREE.Vector3(-5, 0, 0), new THREE.Vector3(-1, 0, 0), wall.clone())
+  plane.update()
+  planes.push(plane)
+
+  wall = new THREE.Mesh(new THREE.BoxGeometry(10, 50, 220), new THREE.MeshPhongMaterial({
+    color: 0xff0000,
+    opacity: 0.2,
+    transparent: true
+  }))
+  scene.add(wall)
+  wall.position.y = 20
+  wall.position.x = -105
+  plane = new Plane(new THREE.Vector3(5, 0, 0), new THREE.Vector3(1, 0, 0), wall.clone())
+  plane.update()
+  planes.push(plane)
+
+}
+
+function animate() {
+  soundVal += sign * 0.01;
+  soundVal = THREE.Math.clamp(soundVal, 0, 1);
+  soundtrack.volume = soundVal;
+  var dt = clock.getDelta();
+
+  //	puck.pos += puck.vel*dt;
+  puck.pos.add(puck.vel.clone().multiplyScalar(dt));
+
+  ////////////////////////////////////////////////
+  balls.forEach(function(b) {
+    b.update(0.1)
+  })
+  collision();
+  puck.mesh.position.copy(puck.pos);
+  //	ball.update (0.1)
+  requestAnimationFrame(animate);
+  render();
+}
+
+function render() {
+  renderer.render(scene, camera);
+}
+
+</script>
+
+</body>
+</html>
