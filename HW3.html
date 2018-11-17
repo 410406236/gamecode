@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<title>Homework03</title>
+<style>
+#info {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+</style>
+</head>
+
+<body> 
+
+<div id="info">HW3</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+
+<audio id="soundtrack" autoplay loop style="display:none">
+<source src="sounds/HW3_bgm.mp3" type='audio/mp3'>
+</audio>
+
+<script>
+var camera, scene, renderer, mesh, light, controls, BGM;
+
+var head, body;
+var LH1, LH2, RH1, RH2;
+var LF1, LF2, RF1, RF2;
+
+var clock = new THREE.Clock();
+var ts = clock.getElapsedTime();
+var intKey = [];
+var T = 8;
+var pose0 = {
+	//頭
+	head_x: 0.01,
+    head_y: 0.01,
+	head_z: 0.01,
+	//身
+	body_x: 0.01,
+    body_y: 0.01,
+	body_z: 0.01,
+	body_h: 60.01,
+	//右手
+    RH1_x: 0.01,
+    RH1_y: 0.01,
+	RH1_z: 0.01,
+	RH2_x: 0.01,
+    RH2_y: 0.01,
+	RH2_z: 0.01,
+	//左手
+	LH1_x: 0.01,
+    LH1_y: 0.01,
+	LH1_z: 0.01,
+	LH2_x: 0.01,
+    LH2_y: 0.01,
+	LH2_z: 0.01,
+	//右腳
+	RF1_x: 0.01,
+    RF1_y: 0.01,
+	RF1_z: 0.01,
+	RF2_x: 0.01,
+    RF2_y: 0.01,
+	RF2_z: 0.01,
+	//左腳
+	LF1_x: 0.01,
+    LF1_y: 0.01,
+	LF1_z: 0.01,
+	LF2_x: 0.01,
+    LF2_y: 0.01,
+	LF2_z: 0.01};
+//走
+var pose1 = {
+	//頭
+	head_x: 0.384,
+    head_y: 0.01,
+	head_z: 0.01,
+	//身
+	body_x: 0.01,
+    body_y: 0.01,
+	body_z: 0.01,
+	body_h: 60.01,
+	//右手
+    RH1_x: -0.648,
+    RH1_y: 0.01,
+	RH1_z: 0.01,
+	RH2_x: -1.368,
+    RH2_y: 0.01,
+	RH2_z: 0.01,
+	//左手
+	LH1_x: 0.648,
+    LH1_y: 0.01,
+	LH1_z: 0.01,
+	LH2_x: -1.368,
+    LH2_y: 0.01,
+	LH2_z: 0.01,
+	//右腳
+	RF1_x: 0.01,
+    RF1_y: 0.01,
+	RF1_z: 0.01,
+	RF2_x: 0.01,
+    RF2_y: 0.01,
+	RF2_z: 0.01,
+	//左腳
+	LF1_x: -0.861,
+    LF1_y: 0.01,
+	LF1_z: 0.01,
+	LF2_x: 1.03,
+    LF2_y: 0.01,
+	LF2_z: 0.01};
+var pose2 = {
+	//頭
+	head_x: -0.384,
+    head_y: 0.01,
+	head_z: 0.01,
+	//身
+	body_x: 0.01,
+    body_y: 0.01,
+	body_z: 0.01,
+	body_h: 60.01,
+	//右手
+    RH1_x: 0.648,
+    RH1_y: 0.01,
+	RH1_z: 0.01,
+	RH2_x: -1.368,
+    RH2_y: 0.01,
+	RH2_z: 0.01,
+	//左手
+	LH1_x: -0.648,
+    LH1_y: 0.01,
+	LH1_z: 0.01,
+	LH2_x: -1.368,
+    LH2_y: 0.01,
+	LH2_z: 0.01,
+	//右腳
+	RF1_x: -0.861,
+    RF1_y: 0.01,
+	RF1_z: 0.01,
+	RF2_x: 1.03,
+    RF2_y: 0.01,
+	RF2_z: 0.01,
+	//左腳
+	LF1_x: 0.01,
+    LF1_y: 0.01,
+	LF1_z: 0.01,
+	LF2_x: 0.01,
+    LF2_y: 0.01,
+	LF2_z: 0.01};
+//走
+var pose3 = {
+	//頭
+	head_x: 0.384,
+    head_y: 0.01,
+	head_z: 0.01,
+	//身
+	body_x: 0.01,
+    body_y: 0.01,
+	body_z: 0.01,
+	body_h: 60.01,
+	//右手
+    RH1_x: -0.648,
+    RH1_y: 0.01,
+	RH1_z: 0.01,
+	RH2_x: -1.368,
+    RH2_y: 0.01,
+	RH2_z: 0.01,
+	//左手
+	LH1_x: 0.648,
+    LH1_y: 0.01,
+	LH1_z: 0.01,
+	LH2_x: -1.368,
+    LH2_y: 0.01,
+	LH2_z: 0.01,
+	//右腳
+	RF1_x: 0.01,
+    RF1_y: 0.01,
+	RF1_z: 0.01,
+	RF2_x: 0.01,
+    RF2_y: 0.01,
+	RF2_z: 0.01,
+	//左腳
+	LF1_x: -0.861,
+    LF1_y: 0.01,
+	LF1_z: 0.01,
+	LF2_x: 1.03,
+    LF2_y: 0.01,
+	LF2_z: 0.01};
+var pose4 = {
+	//頭
+	head_x: -0.384,
+    head_y: 0.01,
+	head_z: 0.01,
+	//身
+	body_x: 0.01,
+    body_y: 0.01,
+	body_z: 0.01,
+	body_h: 60.01,
+	//右手
+    RH1_x: 0.648,
+    RH1_y: 0.01,
+	RH1_z: 0.01,
+	RH2_x: -1.368,
+    RH2_y: 0.01,
+	RH2_z: 0.01,
+	//左手
+	LH1_x: -0.648,
+    LH1_y: 0.01,
+	LH1_z: 0.01,
+	LH2_x: -1.368,
+    LH2_y: 0.01,
+	LH2_z: 0.01,
+	//右腳
+	RF1_x: -0.861,
+    RF1_y: 0.01,
+	RF1_z: 0.01,
+	RF2_x: 1.03,
+    RF2_y: 0.01,
+	RF2_z: 0.01,
+	//左腳
+	LF1_x: 0.01,
+    LF1_y: 0.01,
+	LF1_z: 0.01,
+	LF2_x: 0.01,
+    LF2_y: 0.01,
+	LF2_z: 0.01};
+//跳
+var pose5 = {
+	//頭
+	head_x: 0.3,
+    head_y: 0.01,
+	head_z: 0.01,
+	//身
+	body_x: 0.01,
+    body_y: 0.01,
+	body_z: 0.01,
+	body_h: 56.01,
+	//右手
+    RH1_x: 0.1,
+    RH1_y: 0.45,
+	RH1_z: -0.48,
+	RH2_x: -1.3,
+    RH2_y: 0.01,
+	RH2_z: 0.01,
+	//左手
+	LH1_x: 0.1,
+    LH1_y: -0.45,
+	LH1_z: 0.48,
+	LH2_x: -1.3,
+    LH2_y: 0.01,
+	LH2_z: 0.01,
+	//右腳
+	RF1_x: -0.8,
+    RF1_y: -0.74,
+	RF1_z: -0.54,
+	RF2_x: 1.1,
+    RF2_y: 0.01,
+	RF2_z: 0.01,
+	//左腳
+	LF1_x: -0.74,
+    LF1_y: 0.54,
+	LF1_z: 0.4,
+	LF2_x: 1.1,
+    LF2_y: 0.01,
+	LF2_z: 0.01};
+var pose6 = {
+	//頭
+	head_x: 0.01,
+    head_y: 0.01,
+	head_z: 0.01,
+	//身
+	body_x: 0.01,
+    body_y: 0.01,
+	body_z: 0.01,
+	body_h: 65.01,
+	//右手
+    RH1_x: 0.1,
+    RH1_y: 0.01,
+	RH1_z: -0.48,
+	RH2_x: 0.01,
+    RH2_y: 0.01,
+	RH2_z: 0.01,
+	//左手
+	LH1_x: 0.1,
+    LH1_y: 0.01,
+	LH1_z: 0.48,
+	LH2_x: 0.01,
+    LH2_y: 0.01,
+	LH2_z: 0.01,
+	//右腳
+	RF1_x: 0.01,
+    RF1_y: 0.01,
+	RF1_z: 0.01,
+	RF2_x: 0.01,
+    RF2_y: 0.01,
+	RF2_z: 0.01,
+	//左腳
+	LF1_x: 0.01,
+    LF1_y: 0.01,
+	LF1_z: 0.01,
+	LF2_x: 0.01,
+    LF2_y: 0.01,
+	LF2_z: 0.01};
+var pose7 = {
+	//頭
+	head_x: -0.6,
+    head_y: 0.01,
+	head_z: 0.01,
+	//身
+	body_x: 0.01,
+    body_y: 0.01,
+	body_z: 0.01,
+	body_h: 80,
+	//右手
+    RH1_x: 0.1,
+    RH1_y: 0.01,
+	RH1_z: -2.8,
+	RH2_x: 0.01,
+    RH2_y: 0.01,
+	RH2_z: 0.01,
+	//左手
+	LH1_x: 0.1,
+    LH1_y: 0.01,
+	LH1_z: 2.8,
+	LH2_x: 0.01,
+    LH2_y: 0.01,
+	LH2_z: 0.01,
+	//右腳
+	RF1_x: 0.01,
+    RF1_y: 0.01,
+	RF1_z: 0.01,
+	RF2_x: 0.5,
+    RF2_y: 0.01,
+	RF2_z: 0.01,
+	//左腳
+	LF1_x: 0.01,
+    LF1_y: 0.01,
+	LF1_z: 0.01,
+	LF2_x: 0.5,
+    LF2_y: 0.01,
+	LF2_z: 0.01};
+var pose8 = {
+	//頭
+	head_x: -0.28,
+    head_y: 0.01,
+	head_z: 0.01,
+	//身
+	body_x: 0.3,
+    body_y: 0.01,
+	body_z: 0.01,
+	body_h: 50.01,
+	//右手
+    RH1_x: 0.01,
+    RH1_y: 0.01,
+	RH1_z: -0.2,
+	RH2_x: -1.01,
+    RH2_y: 0.01,
+	RH2_z: 0.01,
+	//左手
+	LH1_x: 0.01,
+    LH1_y: 0.01,
+	LH1_z: 0.2,
+	LH2_x: -1.01,
+    LH2_y: 0.01,
+	LH2_z: 0.01,
+	//右腳
+	RF1_x: -0.8763,
+    RF1_y: 0.01,
+	RF1_z: 0.01,
+	RF2_x: 1.6,
+    RF2_y: 0.01,
+	RF2_z: 0.01,
+	//左腳
+	LF1_x: -0.8763,
+    LF1_y: 0.01,
+	LF1_z: 0.01,
+	LF2_x: 1.6,
+    LF2_y: 0.01,
+	LF2_z: 0.01};
+
+
+var keys = [ 
+	[0, pose0],
+	[0.03, pose1],
+	[0.06, pose2], 
+	[0.09, pose1],
+	[0.12, pose2], 
+  
+	[0.15, pose3],
+	[0.18, pose4],
+	[0.21, pose3],
+	[0.24, pose4],
+
+	[0.27, pose5],
+	[0.30, pose6],
+	[0.33, pose7],
+	[0.36, pose8],
+	[0.39, pose0],
+
+	[0.42, pose3],
+	[0.45, pose4],
+	[0.48, pose3],
+	[0.51, pose4],
+  [0.54, pose3],
+	[0.57, pose4],
+	[0.60, pose3],
+	[0.63, pose4],
+  
+	[0.66, pose5],
+	[0.69, pose6],
+	[0.72, pose7],
+	[0.75, pose8],
+	[0.78, pose0],
+  
+	[0.81, pose3],
+	[0.84, pose4],
+	[0.87, pose3],
+	[0.90, pose4],
+	[0.93, pose3],
+	[0.96, pose4],
+	
+	[1, pose0]];
+
+init();
+animate();
+
+function init() {
+  scene = new THREE.Scene();
+  BGM = document.getElementById ('soundtrack');
+  BGM.volume = 0.5;
+  BGM.play();
+
+  camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 1000);
+  camera.position.y = 150;
+  camera.position.z = 150;
+
+  light = new THREE.PointLight(0xffffff);
+  light.position.set(0, 300, 200);
+  scene.add(light);
+
+  var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+  scene.add(gridXZ);
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x888888);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  document.body.appendChild(renderer.domElement);
+  ///////////////////////////////////////////////////////////
+  let Box, Mat, mesh;
+  //頭
+  Box = new THREE.BoxGeometry(5, 5, 5);
+  Mat = new THREE.MeshLambertMaterial({color: 0xffb999});
+  head = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -5, 0);    //旋轉軸設定
+  head.add(mesh);
+  head.position.y = -15;
+  //身
+  Box = new THREE.BoxGeometry(10, 15, 10);
+  Mat = new THREE.MeshLambertMaterial({color: 0xfffffe});
+  body = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -30, 0); 
+  body.add(mesh);
+  body.position.y = 0
+  //右手
+  Box = new THREE.BoxGeometry(5, 8, 5);
+  Mat = new THREE.MeshLambertMaterial({color: 0x0000f1});
+  RH1 = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -10, 0);    //旋轉軸設定
+  RH1.add(mesh);
+  RH1.position.x = -7;
+  RH1.position.y = -18;
+  
+  Box = new THREE.BoxGeometry(5, 10, 5);
+  Mat = new THREE.MeshLambertMaterial({color: 0xffb999});
+  RH2 = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -8, 0);    //旋轉軸設定
+  RH2.add(mesh);
+  RH2.position.y = -12;
+  //左手
+  Box = new THREE.BoxGeometry(5, 8, 5);
+  Mat = new THREE.MeshLambertMaterial({color: 0x0000f1});
+  LH1 = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -10, 0);    //旋轉軸設定
+  LH1.add(mesh);
+  LH1.position.x = 7;
+  LH1.position.y = -18;
+  
+  Box = new THREE.BoxGeometry(5, 10, 5);
+  Mat = new THREE.MeshLambertMaterial({color: 0xffb999});
+  LH2 = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -8, 0);    //旋轉軸設定
+  LH2.add(mesh);
+  LH2.position.y = -12;
+  //右腳
+  Box = new THREE.BoxGeometry(5, 10, 5);
+  Mat = new THREE.MeshLambertMaterial({color: 0x0000f1});
+  RF1 = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -6, -5);    //旋轉軸設定
+  RF1.add(mesh);
+  RF1.position.x = -3;
+  RF1.position.y = -36;
+  RF1.position.z = 5;
+  
+  Box = new THREE.BoxGeometry(5, 12, 5);
+  Mat = new THREE.MeshLambertMaterial({color: 0xffb999});
+  RF2 = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -5, -5);    //旋轉軸設定
+  RF2.add(mesh);
+  RF2.position.y = -12;
+  //左腳
+  Box = new THREE.BoxGeometry(5, 10, 5);
+  Mat = new THREE.MeshLambertMaterial({color: 0x0000f1});
+  LF1 = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -6, -5);    //旋轉軸設定
+  LF1.add(mesh);
+  LF1.position.x = 3;
+  LF1.position.y = -36;
+  LF1.position.z = 5;
+  
+  Box = new THREE.BoxGeometry(5, 12, 5);
+  Mat = new THREE.MeshLambertMaterial({color: 0xffb999});
+  LF2 = new THREE.Object3D();
+  mesh =  new THREE.Mesh(Box, Mat);
+  mesh.position.set(0, -5, -5);    //旋轉軸設定
+  LF2.add(mesh);
+  LF2.position.y = -12;
+	
+  
+  body.add(head);
+  body.add(RH1);
+  body.add(LH1);
+  body.add(RF1);
+  body.add(LF1);
+  RH1.add(RH2);
+  LH1.add(LH2);
+  RF1.add(RF2);
+  LF1.add(LF2);
+  
+  scene.add(body);
+}
+
+function keyframe(t) {
+  var s = ((t - ts) % T) / T;
+  
+  for (var i = 1; i < keys.length; i++) {
+    if (keys[i][0] > s) break;
+  }
+  var ii = i - 1;
+  var a = (s - keys[ii][0]) / (keys[ii + 1][0] - keys[ii][0]);
+  
+  head_x = keys[ii][1].head_x*(1-a) + keys[ii+1][1].head_x*a;
+  head_y = keys[ii][1].head_y*(1-a) + keys[ii+1][1].head_y*a;
+  head_z = keys[ii][1].head_z*(1-a) + keys[ii+1][1].head_z*a;
+  body_x = keys[ii][1].body_x*(1-a) + keys[ii+1][1].body_x*a;
+  body_y = keys[ii][1].body_y*(1-a) + keys[ii+1][1].body_y*a;
+  body_z = keys[ii][1].body_z*(1-a) + keys[ii+1][1].body_z*a;
+  body_h = keys[ii][1].body_h*(1-a) + keys[ii+1][1].body_h*a;
+  RH1_x = keys[ii][1].RH1_x*(1-a) + keys[ii+1][1].RH1_x*a;
+  RH1_y = keys[ii][1].RH1_y*(1-a) + keys[ii+1][1].RH1_y*a;
+  RH1_z = keys[ii][1].RH1_z*(1-a) + keys[ii+1][1].RH1_z*a;
+  RH2_x = keys[ii][1].RH2_x*(1-a) + keys[ii+1][1].RH2_x*a;
+  RH2_y = keys[ii][1].RH2_y*(1-a) + keys[ii+1][1].RH2_y*a;
+  RH2_z = keys[ii][1].RH2_z*(1-a) + keys[ii+1][1].RH2_z*a;
+  LH1_x = keys[ii][1].LH1_x*(1-a) + keys[ii+1][1].LH1_x*a;
+  LH1_y = keys[ii][1].LH1_y*(1-a) + keys[ii+1][1].LH1_y*a;
+  LH1_z = keys[ii][1].LH1_z*(1-a) + keys[ii+1][1].LH1_z*a;
+  LH2_x = keys[ii][1].LH2_x*(1-a) + keys[ii+1][1].LH2_x*a;
+  LH2_y = keys[ii][1].LH2_y*(1-a) + keys[ii+1][1].LH2_y*a;
+  LH2_z = keys[ii][1].LH2_z*(1-a) + keys[ii+1][1].LH2_z*a;
+  RF1_x = keys[ii][1].RF1_x*(1-a) + keys[ii+1][1].RF1_x*a;
+  RF1_y = keys[ii][1].RF1_y*(1-a) + keys[ii+1][1].RF1_y*a;
+  RF1_z = keys[ii][1].RF1_z*(1-a) + keys[ii+1][1].RF1_z*a;
+  RF2_x = keys[ii][1].RF2_x*(1-a) + keys[ii+1][1].RF2_x*a;
+  RF2_y = keys[ii][1].RF2_y*(1-a) + keys[ii+1][1].RF2_y*a;
+  RF2_z = keys[ii][1].RF2_z*(1-a) + keys[ii+1][1].RF2_z*a;
+  LF1_x = keys[ii][1].LF1_x*(1-a) + keys[ii+1][1].LF1_x*a;
+  LF1_y = keys[ii][1].LF1_y*(1-a) + keys[ii+1][1].LF1_y*a;
+  LF1_z = keys[ii][1].LF1_z*(1-a) + keys[ii+1][1].LF1_z*a;
+  LF2_x = keys[ii][1].LF2_x*(1-a) + keys[ii+1][1].LF2_x*a;
+  LF2_y = keys[ii][1].LF2_y*(1-a) + keys[ii+1][1].LF2_y*a;
+  LF2_z = keys[ii][1].LF2_z*(1-a) + keys[ii+1][1].LF2_z*a;
+  
+  intKey = [head_x, head_y, head_z, body_x, body_y, body_z, body_h,
+            RH1_x, RH1_y, RH1_z, RH2_x, RH2_y, RH2_z,
+			LH1_x, LH1_y, LH1_z, LH2_x, LH2_y, LH2_z,
+			RF1_x, RF1_y, RF1_z, RF2_x, RF2_y, RF2_z,
+			LF1_x, LF1_y, LF1_z, LF2_x, LF2_y, LF2_z,];
+}
+
+function animate() {
+  keyframe(clock.getElapsedTime());
+  requestAnimationFrame(animate);
+  render();
+}
+
+function render() {
+  //頭
+  head.rotation.x = intKey[0];
+  head.rotation.y = intKey[1];
+  head.rotation.z = intKey[2];
+  //身
+  body.rotation.x = intKey[3];
+  body.rotation.y = intKey[4];
+  body.rotation.z = intKey[5];
+  body.position.y = intKey[6];
+  //右手
+  RH1.rotation.x = intKey[7];
+  RH1.rotation.y = intKey[8];
+  RH1.rotation.z = intKey[9];
+  RH2.rotation.x = intKey[10];
+  RH2.rotation.y = intKey[11];
+  RH2.rotation.z = intKey[12];
+  //左手
+  LH1.rotation.x = intKey[13];
+  LH1.rotation.y = intKey[14];
+  LH1.rotation.z = intKey[15];
+  LH2.rotation.x = intKey[16];
+  LH2.rotation.y = intKey[17];
+  LH2.rotation.z = intKey[18];
+  //右腳
+  RF1.rotation.x = intKey[19];
+  RF1.rotation.y = intKey[20];
+  RF1.rotation.z = intKey[21];
+  RF2.rotation.x = intKey[22];
+  RF2.rotation.y = intKey[23];
+  RF2.rotation.z = intKey[24];
+  //左腳
+  LF1.rotation.x = intKey[25];
+  LF1.rotation.y = intKey[26];
+  LF1.rotation.z = intKey[27];
+  LF2.rotation.x = intKey[28];
+  LF2.rotation.y = intKey[29];
+  LF2.rotation.z = intKey[30];
+  
+  renderer.render(scene, camera);
+}
+</script>
+</body>
+
+</html>
