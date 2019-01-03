@@ -1,3 +1,6 @@
+import {Obstacle} from './obstacle.js';
+import {Target} from './target.js';
+import {scene} from './threemain.js';
 function agentMesh (size, colorName='red') {
 	// mesh facing +x
 	let geometry = new THREE.Geometry();
@@ -16,34 +19,16 @@ function agentMesh (size, colorName='red') {
 	     new THREE.MeshBasicMaterial({color:colorName, wireframe:true}))  
 }
 
-function startTimer(duration, display) {
-    var timer = duration, minutes, seconds;
-    setInterval(function () {
-        minutes = parseInt(timer / 60, 10)
-        seconds = parseInt(timer % 60, 10);
-
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        seconds = seconds < 10 ? "0" + seconds : seconds;
-
-        display.textContent = minutes + ":" + seconds;
-		if(scene.targets.length > 0)
-			++timer;
-
-    }, 1000);
-}jQuery(function ($) {
-        display = $('#time');
-    startTimer(0, display);
-});
 class Agent {
   constructor(pos, halfSize) {
-  	this.name = "jyhuang";
+	this.name = "jyhuang";
     this.pos = pos.clone();
     this.vel = new THREE.Vector3();
     this.force = new THREE.Vector3();
     this.target = null;
     this.halfSize = halfSize;  // half width
     this.mesh = agentMesh (this.halfSize, 'cyan');
-    this.MAXSPEED = 10000;
+    this.MAXSPEED = 5000;
     this.ARRIVAL_R = 30;
     
     this.score = 0;
@@ -135,9 +120,21 @@ class Agent {
     return targetPos.clone().sub(this.pos).normalize().multiplyScalar(this.MAXSPEED).sub(this.vel)
   }
 
+ setEnemy(otherAgent){
+        this.enemy = otherAgent;
+    }
   accumulateForce() {
     // seek
     this.force.copy(this.targetInducedForce(this.target.pos));
+	
+	//separation
+	let push = new THREE.Vector3();
+	let point = this.pos.clone().sub(this.enemy.pos);
+	let d = point.length();
+	if(d < 50){
+		push.add(point.setLength(250 / d ));
+		this.force.add(push)
+	}
   }
 
-}
+}export {Agent};
