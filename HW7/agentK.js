@@ -132,6 +132,15 @@ class Agent {
   accumulateForce() {
     // seek
     this.force.copy(this.targetInducedForce(this.target.pos));
+	
+	//separation
+	let push = new THREE.Vector3();
+	let point = this.pos.clone().sub(this.enemy.pos);
+	let d = point.length();
+	if(d < 50){
+		push.add(point.setLength(250 / d ));
+		this.force.add(push)
+	}
   }
 
 	findObstacle(obs){
